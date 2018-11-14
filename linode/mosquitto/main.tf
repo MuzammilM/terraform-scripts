@@ -12,7 +12,7 @@ data "linode_instance_type" "default" {
 }
 
 data "linode_image" "ubuntu" {
-  id = "linode/ubuntu18.04"
+  id = "linode/ubuntu14.04lts"
 }
 	
 resource "linode_instance" "mosquitto" {
@@ -34,7 +34,10 @@ resource "linode_instance" "mosquitto" {
       "apt-get -y update",
       "apt-get install -y mosquitto",
       "apt-get install -y mosquitto-clients",
-
+      "sudo apt-get install fail2ban -y",
+      "ufw allow 22",
+      "ufw allow 1883",
+      "echo yes | ufw enable",
     ]
     connection {
         type     = "ssh",
@@ -54,7 +57,7 @@ resource "linode_nodebalancer" "mosquittolb" {
 resource "linode_nodebalancer_config" "mosquittolbconfig" {
   port            = 1883
   nodebalancer_id = "${linode_nodebalancer.mosquittolb.id}"
-  protocol        = "http"
+  protocol        = "tcp"
   algorithm       = "source"
   stickiness      = "none"
   check_interval  = "90"	#Seconds between health check probes
@@ -73,3 +76,9 @@ resource "linode_nodebalancer_node" "mosquittolbnode" {
   mode    = "accept"
 }
 
+resource "linode_domain_record" "A-root" {
+  domain_id   = "804934"
+  record_type = "A"
+  name        = "${var.domain_name}"
+  target      = "${linode_nodebalancer.mosquittolb.ipv4}"
+}
