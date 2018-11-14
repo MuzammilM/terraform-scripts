@@ -72,7 +72,7 @@ resource "linode_nodebalancer_node" "mosquittolbnode" {
   label           = "mosquitto_${count.index}"
 
   address = "${element(linode_instance.mosquitto.*.private_ip_address, count.index)}:1883"
-  weight  = 50
+  weight  = "${100 / var.count}"
   mode    = "accept"
 }
 
